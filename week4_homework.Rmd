@@ -1,0 +1,86 @@
+---
+title: "Week4_homework"
+author: "XIAFAN"
+date: "2022-10-30"
+output: html_document
+---
+
+## Week 4 homework
+
+This is an R Markdown document for the 4th week homework of CASA05.
+
+## Task
+
+The task this week is to:
+
+1.  Read in [global gender inequality data](https://hdr.undp.org/data-center/documentation-and-downloads)
+
+2.  Join the global gender inequality index to [spatial data of the World](https://hub.arcgis.com/datasets/2b93b06dc0dc4e809d3c8db5cb96ba69_0/explore?location=-2.688200%2C0.000000%2C1.41), creating a new column of difference in inequality between 2010 and 2019
+
+3.  Share it with the World on GitHub
+
+4.  Add you repository URL to the circulated spreadsheet
+
+## Content
+
+1.  Load the package
+
+```{r}
+library("sf")
+library("tidyverse")
+library("countrycode")
+library("tmap")
+```
+
+2.  Load the CSV
+
+To analysis the difference of GII(Gender Inequality Index) between 2010 and 2019. We need the column named 'gii_2010' and 'gii_2019'. To identify the country, we also need to column named 'iso3' and 'country'
+
+```{r}
+# load the csv data and filter the data
+
+gii <- read_csv("./data/HDR21-22_Composite_indices_complete_time_series.csv")[, c("iso3", "country","gii_2010","gii_2019")]
+
+# print(gii)
+
+# calculate the change and store it in a new column
+gii$change <- gii$gii_2019 - gii$gii_2010
+
+```
+
+3.  Load the shapefile of the global and join the data
+
+Cause the shp has a column named "ISO" which is not same as the "ios3" but it is same as "ios2". So we need to convert the ISO2 code to ISO3 code
+
+PS: ISO(the International Organization for Standardization) is a standard code which means each country on earth has his own code.
+
+```{r}
+
+# load the shp
+shape <- st_read("./data/World_Countries_(Generalized)/World_Countries__Generalized_.shp")
+
+# convert the iso by using countrycode, Thank you Andy!
+shape$ISO <- countrycode(shape$ISO, origin = "iso2c", destination = "iso3c")
+
+# plot(shape)
+
+# merge the result
+world_gii <- shape %>%
+  merge(.,
+        gii,
+        by.x = "ISO",
+        by.y = "iso3")
+
+# plot(world_gii,max.plot = 11)
+
+# try to plot the change / show it on the map
+
+tmap_mode("plot")
+tm_shape(world_gii) + 
+  tm_polygons("change", title="GII") +
+  tm_layout(title = "GII Change between 2010 and 2019", legend.position = c("left", "bottom"))
+
+
+```
+
+4.  Share it via github
